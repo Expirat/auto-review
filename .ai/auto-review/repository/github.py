@@ -23,8 +23,6 @@ class GitHub(Repository):
             "body": text,
             "commit_id": commit_id,
             "path" : file_path,
-            "start_line": line,
-            "start_side": "RIGHT",
             "side":"RIGHT",
             "line" : line
         }
