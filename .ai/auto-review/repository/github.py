@@ -32,6 +32,22 @@ class GitHub(Repository):
         else:
             raise RepositoryError(f"Error with line comment {response.status_code} : {response.text}")
         
+    def post_comment_to_line_with_diff_hunks(self, text, commit_id, file_path, line, diff_hunks):
+        headers = self.__header_accept_json | self.__header_authorization
+        body = {
+            "body": text,
+            "commit_id": commit_id,
+            "path" : file_path,
+            "side":"RIGHT",
+            "line" : line,
+            "diff_hunk": diff_hunks
+        }
+        response = requests.post(self.__url_add_comment, json = body, headers = headers)
+        if response.status_code == 200 or response.status_code == 201:
+            return response.json()
+        else:
+            raise RepositoryError(f"Error with line comment {response.status_code} : {response.text}")
+        
     def post_comment_general(self, text):
         headers = self.__header_accept_json | self.__header_authorization
         body = {
