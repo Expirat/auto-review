@@ -2,7 +2,9 @@ name: Auto review Gemini AI
 
 on:
   pull_request:
-    types: [labeled]
+    types: 
+      - labeled # Trigger when a label is added to the PR
+      - synchronize  # Trigger when new commits are pushed to the PR
 
 jobs:
       ai_pr_reviewer:
@@ -33,6 +35,9 @@ jobs:
             uses: actions/setup-python@v2
             with:
               python-version: '3.x'
+
+          - name: Upgrade PIP
+            run: pip install --upgrade pip
     
           - name: Install dependencies
             run: pip install -r .ai/auto-review/requirements.txt
@@ -42,7 +47,8 @@ jobs:
               GITHUB_HEAD_REF: ${{ github.head_ref }}
               GITHUB_BASE_REF: ${{ github.base_ref }}
               GEMINI_API_KEY: ${{ secrets.G_API_KEY }}
-              GITHUB_TOKEN: ${{ secrets.API_KEY }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TARGET_EXTENSIONS: ${{ vars.TARGET_EXTENSIONS }}
               REPO_OWNER: ${{ github.repository_owner }}
               REPO_NAME: ${{ github.event.repository.name }}
               PULL_NUMBER: ${{ github.event.number }}

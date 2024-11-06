@@ -25,6 +25,7 @@ from repository.github import GitHub
 from repository.repository import RepositoryError
 import google.generativeai as genai
 from ai.ai_bot import AiBot
+import re
 
 separator = "\n\n----------------------------------------------------------------------\n\n"
 log_file = open('output.txt', 'a')
@@ -93,10 +94,30 @@ def main():
                 if response.line:
                     result = post_line_comment(github=github, file=file, text=response.text, line=response.line)
                 if not result:
+                    diff_hunks = extract_diff_hunks(file_diffs)
+                    result = post_line_comment_with_diff_hunks(github=github, file=file, text=response.text, line=response.line, diff_hunk=diff_hunks)
+                if not result:
                     result = post_general_comment(github=github, file=file, text=response.text)
                 if not result:
                     raise RepositoryError("Failed to post any comments.")
 
+def extract_diff_hunks(diff_text, context_lines=3):
+    hunks = []
+    # Match each hunk starting with @@ and capture the line and surrounding context
+    hunk_pattern = re.compile(r'(@@ .+ @@)([\s\S]*?)(?=(^@@|^diff|\Z))', re.MULTILINE)
+
+    for match in hunk_pattern.finditer(diff_text):
+        hunk_header = match.group(1)
+        hunk_body = match.group(2).strip().splitlines()
+        
+        # Include a limited number of context lines
+        hunk_body_with_context = "\n".join(hunk_body[:context_lines + 1])
+
+        # Format it as the diff_hunk (combine header and limited body)
+        diff_hunk = f"{hunk_header}\n{hunk_body_with_context}"
+        hunks.append(diff_hunk)
+
+    return hunks
 
 def post_line_comment(github: GitHub, file: str, text:str, line: int):
     Log.print_green("Posting line", file, line, text)
@@ -106,6 +127,22 @@ def post_line_comment(github: GitHub, file: str, text:str, line: int):
             commit_id=Git.get_last_commit_sha(file=file), 
             file_path=file, 
             line=line,
+        )
+        Log.print_yellow("Posted", git_response)
+        return True
+    except RepositoryError as e:
+        Log.print_red("Failed line comment", e)
+        return False
+    
+def post_line_comment_with_diff_hunks(github: GitHub, file: str, text:str, line: int, diff_hunk: str):
+    Log.print_green("Posting line", file, line, text)
+    try:
+        git_response = github.post_comment_to_line_with_diff_hunks(
+            text=text, 
+            commit_id=Git.get_last_commit_sha(file=file), 
+            file_path=file, 
+            line=line,
+            diff_hunks=diff_hunk
         )
         Log.print_yellow("Posted", git_response)
         return True

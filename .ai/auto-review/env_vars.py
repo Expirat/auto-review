@@ -30,8 +30,7 @@ class EnvVars:
             "token" : self.token,
             "base_ref" : self.base_ref,
             "pull_number" : self.pull_number,
-            "chat_gpt_token" : self.chat_gpt_token,
-            "chat_gpt_model" : self.chat_gpt_model,
+            "gemini_ai_token" : self.gemini_ai_token
         }
 
     def check_vars(self):
