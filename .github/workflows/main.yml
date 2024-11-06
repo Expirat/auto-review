@@ -1,4 +1,57 @@
+name: Auto review Gemini AI
+
 on:
   pull_request:
-    branches:
-    - main
+    types: [labeled]
+
+jobs:
+      ai_pr_reviewer:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+            with:
+              fetch-depth: 0
+          
+          - name: Check if specific label exists
+            id: label_check
+            run: |
+              # GitHub provides the label name as an environment variable
+              echo "Labels on this PR: ${{ github.event.label.name }}"
+              if [[ "${{ github.event.label.name }}" != "ai-reviewed" ]]; then
+                echo "Label not of interest, exiting."
+                exit 0
+              fi
+          
+          - name: Run Steps for Specific Label
+            if: steps.label_check.outputs.label_exists == 'true'
+            run: |
+              # Add steps you want to execute when "ai-reviewed" is present
+              echo "The label 'ai-reviewed' is present. Running the specified tasks..."
+    
+          - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: '3.x'
+    
+          - name: Install dependencies
+            run: pip install -r .ai/auto-review/requirements.txt
+          
+          - name: Run Reviewer Script
+            env:
+              GITHUB_HEAD_REF: ${{ github.head_ref }}
+              GITHUB_BASE_REF: ${{ github.base_ref }}
+              GEMINI_API_KEY: ${{ secrets.G_API_KEY }}
+              GITHUB_TOKEN: ${{ secrets.API_KEY }}
+              REPO_OWNER: ${{ github.repository_owner }}
+              REPO_NAME: ${{ github.event.repository.name }}
+              PULL_NUMBER: ${{ github.event.number }}
+            run: |
+              python .ai/auto-review/github_reviewer.py
+    
+          - name: Upload result as an artifact
+            uses: actions/upload-artifact@v4
+            with:
+              name: AI-requests
+              path: output.txt
+              retention-days: 1
