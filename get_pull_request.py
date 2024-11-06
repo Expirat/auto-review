@@ -19,4 +19,4 @@ def get_pull_requests(owner, repo_name):
         print(f"Error fetching pull requests: {e}")
 
 # Usage
-get_pull_requests("your-github-username", "your-repo-name")
+get_pull_requests("your-github-username-test", "your-repo-name-test")
