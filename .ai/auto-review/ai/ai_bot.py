@@ -4,27 +4,42 @@
 
 from abc import ABC, abstractmethod
 from ai.line_comment import LineComment
+import re
 
 class AiBot(ABC):
     
     __no_response = "No critical issues found"
     __problems="errors, issues, potential crashes, security issues or unhandled exceptions"
     __chat_gpt_ask_long="""
-As senior engineer and code guard. Could you describe briefly {problems} for the next code with given git diffs? and also give a suggestion how to fix it.
-Please, also, do not add intro words, just print errors in the format: 
+As a senior engineer overseeing code quality, I need a structured review of code issues within specific git diffs and the full file context. For each identified problem, please respond in the following format:
 
-"line_number : cause effect 
-suggestion : give your suggestion here"
+```
+line_number of the issue: description of the problem, highlighting the cause and effect
+suggestion: Suggested code fix with an example if possible
+```
 
-If there are no {problems} just say "{no_response}".
+Please utilize GitHub comment formatting (like code blocks) to illustrate any suggested fixes. e.g.
 
-DIFFS:
+```ruby
+    your suggestion code
+```
 
-{diffs}
+If no issues are found, respond only with `{no_response}`.
 
-Full code from the file:
+Here are the inputs:
 
-{code}
+- Git diffs:
+  ```
+  {diffs}
+  ```
+- Full code context:
+  ```
+  {code}
+  ```
+
+--- 
+
+This version makes it explicit what you’re looking for and provides a clear structure for the response. Let me know if you'd like any more refinement!
 """
 
     @abstractmethod
@@ -48,30 +63,34 @@ Full code from the file:
     
     @staticmethod
     def split_ai_response(input) -> list[LineComment]:
-        if input is None or not input:
+        if not input:
             return []
-        
-        lines = input.strip().split("\n")
+
+        # Regex to match "line_number : " at the start of each comment
+        comment_pattern = re.compile(r'^(\d+)\s*:\s*(.*)', re.MULTILINE)
         models = []
+        current_comment_text = ""
+        current_line = None
 
-        for full_text in lines:
-            number_str = ''
-            number = 0
-            full_text = full_text.strip()
-            if len( full_text ) == 0:
-                continue
+        for match in comment_pattern.finditer(input):
+            # If we have a previous comment, save it before starting a new one
+            if current_line is not None:
+                models.append(LineComment(line=current_line, text=current_comment_text.strip()))
 
-            reading_number = True
-            for char in full_text.strip():
-                if reading_number:
-                    if char.isdigit():
-                        number_str += char
-                    else:
-                        break
+            # Extract line number and initial comment text from the regex match
+            current_line = int(match.group(1))
+            current_comment_text = match.group(2).strip()
 
-            if number_str:
-                number = int(number_str)
+            # Look ahead for text following this match until the next "line_number :"
+            start_index = match.end()
+            end_index = input.find(f"\n{match.group(1)} : ", start_index)
+            if end_index == -1:  # No more line numbers, so capture to end of text
+                current_comment_text += "\n" + input[start_index:].strip()
+            else:
+                current_comment_text += "\n" + input[start_index:end_index].strip()
 
-            models.append(LineComment(line = number, text = full_text))
+        # Append the final comment if any
+        if current_line is not None:
+            models.append(LineComment(line=current_line, text=current_comment_text.strip()))
+
         return models
-    
