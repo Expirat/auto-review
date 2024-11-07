@@ -12,10 +12,17 @@ class AiBot(ABC):
     __problems="errors, issues, potential crashes, security issues or unhandled exceptions"
     __chat_gpt_ask_long="""
 As senior engineer and code guard. Could you describe briefly {problems} for the next code with given git diffs? and also give a suggestion how to fix it.
+
 Please, also, do not add intro words, just print errors in the format: 
 
-"line_number : cause effect 
+"line_number of the issue : cause effect 
 suggestion : give your suggestion here"
+
+you can also use github comment formating to highlight code, e.g.
+
+```ruby
+    you suggestion code fix
+```
 
 If there are no {problems} just say "{no_response}".
 
