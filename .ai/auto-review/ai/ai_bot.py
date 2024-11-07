@@ -11,28 +11,35 @@ class AiBot(ABC):
     __no_response = "No critical issues found"
     __problems="errors, issues, potential crashes, security issues or unhandled exceptions"
     __chat_gpt_ask_long="""
-As senior engineer and code guard. Could you describe briefly {problems} for the next code with given git diffs? and also give a suggestion how to fix it.
+As a senior engineer overseeing code quality, I need a structured review of code issues within specific git diffs and the full file context. For each identified problem, please respond in the following format:
 
-Please, also, do not add intro words, just print errors in the format: 
-
-"line_number of the issue : cause effect 
-suggestion : give your suggestion here"
-
-you can also use github comment formating to highlight code, e.g.
-
-```ruby
-    you suggestion code fix
+```
+line_number of the issue: description of the problem, highlighting the cause and effect
+suggestion: Suggested code fix with an example if possible
 ```
 
-If there are no {problems} just say "{no_response}".
+Please utilize GitHub comment formatting (like code blocks) to illustrate any suggested fixes. e.g.
 
-DIFFS:
+```ruby
+    your suggestion code
+```
 
-{diffs}
+If no issues are found, respond only with `{no_response}`.
 
-Full code from the file:
+Here are the inputs:
 
-{code}
+- Git diffs:
+  ```
+  {diffs}
+  ```
+- Full code context:
+  ```
+  {code}
+  ```
+
+--- 
+
+This version makes it explicit what you’re looking for and provides a clear structure for the response. Let me know if you'd like any more refinement!
 """
 
     @abstractmethod
